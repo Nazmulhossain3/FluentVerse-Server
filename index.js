@@ -30,7 +30,61 @@ async function run() {
     const usersCollection = client.db("summerCampDb").collection('users')
 
     // user api
+
+    app.get('/users', async(req,res)=> {
+        const result = await usersCollection.find().toArray()
+        res.send(result)
+    })
   
+    // admin role api  
+    app.patch('/users/admin/:id', async(req,res)=>{
+        const id = req.params.id 
+        const filter = {_id : new ObjectId(id)}
+        const updateDoc = {
+          $set : {
+            role : 'admin',
+          },
+        }
+     
+        const result = await usersCollection.updateOne(filter,updateDoc)
+        res.send(result)
+      })
+      
+    //   make Instructor role api
+
+      app.patch('/users/Instructor/:id', async(req,res)=>{
+        const id = req.params.id 
+        const filter = {_id : new ObjectId(id)}
+        const updateDoc = {
+          $set : {
+            role : 'Instructor',
+          },
+        }
+     
+        const result = await usersCollection.updateOne(filter,updateDoc)
+        res.send(result)
+      })
+   
+   
+    // check admin api 
+    app.get('/users/admin/:email',async(req,res)=> {
+
+    const query = {email : email}
+    const user = usersCollection.findOne(query)
+    const result = {admin : user?.role ===  'admin'}
+    res.send(result)
+
+    })
+    
+
+
+
+   
+   
+   
+   
+   
+   
     app.post('/users', async(req,res)=>{
         const user = req.body 
         console.log(user)
