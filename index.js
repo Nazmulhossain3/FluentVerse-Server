@@ -28,7 +28,17 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     const usersCollection = client.db("summerCampDb").collection('users')
+    const classesCollection = client.db("summerCampDb").collection('classes')
 
+  //  class related api 
+   app.post('/allClasses',async(req,res)=> {
+
+    
+   })
+   
+   
+   
+   
     // user api
 
     app.get('/users', async(req,res)=> {
@@ -102,7 +112,7 @@ async function run() {
     const email = req.params.email 
     const query = {email : email}
     const user = usersCollection.findOne(query)
-    const result = {admin : user?.role ===  'Instructor'}
+    const result = {instructor : user?.role ===  'Instructor'}
     res.send(result)
 
     })
