@@ -2,6 +2,7 @@ const express = require('express');
 const app = express()
 const cors = require('cors');
 const port = process.env.PORT || 5000
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY);
 require('dotenv').config()
 
 
@@ -26,9 +27,10 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     const usersCollection = client.db("summerCampDb").collection('users')
     const classesCollection = client.db("summerCampDb").collection('classes')
+    const selectedClassCollection = client.db("summerCampDb").collection('selectedClasses')
 
   //  class related api 
    app.post('/allClasses',async(req,res)=> {
@@ -41,6 +43,61 @@ app.get('/classes', async(req,res)=> {
   const result = await classesCollection.find().toArray()
   res.send(result)
 })
+
+
+// getting single class for payment
+app.get('/classes/:id', async(req,res)=> {
+
+   const id = req.params.id
+    const query = {_id : new ObjectId(id)}
+    const result = await classesCollection.findOne(query)
+    res.send(result)
+
+})
+
+
+
+
+// selected class related api 
+app.post('/selectedClass/:id', async (req, res) => {
+  const selectedClass = req.body;
+  const id = req.params.id;
+   const result = await selectedClassCollection.insertOne({ _id: id, ...selectedClass });
+  res.send(result);
+});
+
+app.get('/selectedClass', async(req,res)=> {
+  const result = await selectedClassCollection.find().toArray()
+  res.send(result)
+})
+
+app.delete('/selectedClass/:id', async(req,res)=> {
+
+        const id = req.params.id
+        
+        const query = {_id : id}
+        const result = await selectedClassCollection.deleteOne(query)
+        res.send(result)
+
+})
+
+
+
+
+
+// popular class section api 
+
+  app.get('/popularClass', async(req,res) => {
+
+    const result = await classesCollection.find().sort({'price' : -1}).limit(6).toArray()
+    res.send(result)
+
+
+  })
+
+
+
+
    
    
    
@@ -118,7 +175,7 @@ app.get('/classes', async(req,res)=> {
     const email = req.params.email 
     const query = {email : email}
     const user = await usersCollection.findOne(query)
-    console.log(user)
+    
     const result = {instructor : user?.role ===  'Instructor'}
     res.send(result)
 
@@ -135,7 +192,7 @@ app.get('/classes', async(req,res)=> {
    
     app.post('/users', async(req,res)=>{
         const user = req.body 
-        console.log(user)
+        
   
         const query = {email : user.email}
         const exitingUser = await usersCollection.findOne(query)
@@ -145,6 +202,25 @@ app.get('/classes', async(req,res)=> {
         }
        const result = await usersCollection.insertOne(user)
         res.send(result)
+      })
+
+      // PAYMENT GATEWAY API  
+
+      app.post('/create-payment-intent', async(req,res)=> {
+        const {price} = req.body
+        console.log(price)
+        const amount = price*100 
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount : amount,
+          currency : 'usd',
+          payment_method_types : ['card'],
+        })
+    
+    
+        res.send({
+          clientSecret : paymentIntent.client_secret
+        })
+    
       })
   
   
