@@ -1,9 +1,10 @@
+require('dotenv').config()
+
 const express = require('express');
 const app = express()
 const cors = require('cors');
 const port = process.env.PORT || 5000
 const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY);
-require('dotenv').config()
 
 
 // middleware
@@ -31,6 +32,7 @@ async function run() {
     const usersCollection = client.db("summerCampDb").collection('users')
     const classesCollection = client.db("summerCampDb").collection('classes')
     const selectedClassCollection = client.db("summerCampDb").collection('selectedClasses')
+    const paymentCollection = client.db("summerCampDb").collection('payment')
 
   //  class related api 
    app.post('/allClasses',async(req,res)=> {
@@ -207,9 +209,10 @@ app.delete('/selectedClass/:id', async(req,res)=> {
       // PAYMENT GATEWAY API  
 
       app.post('/create-payment-intent', async(req,res)=> {
-        const {price} = req.body
-        console.log(price)
-        const amount = price*100 
+        try{
+          const {price} = req.body
+        console.log(req.body)
+        const amount = price*100
         const paymentIntent = await stripe.paymentIntents.create({
           amount : amount,
           currency : 'usd',
@@ -220,8 +223,24 @@ app.delete('/selectedClass/:id', async(req,res)=> {
         res.send({
           clientSecret : paymentIntent.client_secret
         })
-    
-      })
+        
+      }catch(error){
+        res.send({error})
+      }
+    })
+
+    // payment related api 
+
+  app.post('/payment', async(req,res)=> {
+    const payment = req.body 
+    const inserterResult = await paymentCollection.insertOne(payment)
+    const enrollmentId = payment.enroll;
+    // const available_seatsId = payment.available_seats
+   const updatedResult = await classesCollection.updateOne({ _id: new ObjectId(enrollmentId)}, { $inc: { available_seats: -1,}});
+
+
+    res.send({inserterResult,updatedResult})
+  })
   
   
   
