@@ -91,10 +91,21 @@ app.delete('/selectedClass/:id', async(req,res)=> {
 
   app.get('/popularClass', async(req,res) => {
 
-    const result = await classesCollection.find().sort({'price' : -1}).limit(6).toArray()
+    const result = await classesCollection.find().sort({'enrolled' : -1}).limit(6).toArray()
     res.send(result)
 
 
+  })
+
+  // here is student enrolled classes get api 
+
+  app.get('/enrolledClass/:email', async(req,res)=> {
+    const email = req.params.email
+    const query = {email : email}
+
+
+    const result = await paymentCollection.find(query).toArray()
+    res.send(result)
   })
 
 
@@ -118,6 +129,14 @@ app.delete('/selectedClass/:id', async(req,res)=> {
         const query = { role : "Instructor"}
         const result = await usersCollection.find(query).toArray()
         res.send(result)
+    })
+    // get popular instructor
+
+    app.get('/popularInstructor', async(req,res)=> {
+      const query = { role : "Instructor"}
+        const result = await usersCollection.find(query).limit(6).toArray()
+        res.send(result)
+
     })
 
 
@@ -234,9 +253,10 @@ app.delete('/selectedClass/:id', async(req,res)=> {
   app.post('/payment', async(req,res)=> {
     const payment = req.body 
     const inserterResult = await paymentCollection.insertOne(payment)
-    const enrollmentId = payment.enroll;
+    const  enrolled = payment.enrolled;
+    console.log(enrolled)
     // const available_seatsId = payment.available_seats
-   const updatedResult = await classesCollection.updateOne({ _id: new ObjectId(enrollmentId)}, { $inc: { available_seats: -1,}});
+   const updatedResult = await classesCollection.updateOne({ _id: new ObjectId(enrolled)}, { $inc: { available_seats: -1,  enrolled :1}});
 
 
     res.send({inserterResult,updatedResult})
@@ -246,8 +266,8 @@ app.delete('/selectedClass/:id', async(req,res)=> {
   
   
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
