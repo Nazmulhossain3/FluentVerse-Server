@@ -46,6 +46,17 @@ app.get('/classes', async(req,res)=> {
   res.send(result)
 })
 
+// instructor my class api
+app.get('/myClass/:email',async(req,res)=> {
+  const email = req.params.email 
+  const query = {email : email}
+  const result = await classesCollection.find(query).toArray()
+  res.send(result)
+})
+
+
+
+
 
 // getting single class for payment
 app.get('/classes/:id', async(req,res)=> {
@@ -63,8 +74,9 @@ app.get('/classes/:id', async(req,res)=> {
 // selected class related api 
 app.post('/selectedClass/:id', async (req, res) => {
   const selectedClass = req.body;
+  delete selectedClass._id
   const id = req.params.id;
-   const result = await selectedClassCollection.insertOne({ _id: id, ...selectedClass });
+   const result = await selectedClassCollection.insertOne({  classId:id, ...selectedClass });
   res.send(result);
 });
 
@@ -104,7 +116,7 @@ app.delete('/selectedClass/:id', async(req,res)=> {
     const query = {email : email}
 
 
-    const result = await paymentCollection.find(query).toArray()
+    const result = await paymentCollection.find(query).sort({'price' : -1}).toArray()
     res.send(result)
   })
 
@@ -257,17 +269,18 @@ app.delete('/selectedClass/:id', async(req,res)=> {
     console.log(enrolled)
     // const available_seatsId = payment.available_seats
    const updatedResult = await classesCollection.updateOne({ _id: new ObjectId(enrolled)}, { $inc: { available_seats: -1,  enrolled :1}});
-
-
-    res.send({inserterResult,updatedResult})
+ 
+   res.send({inserterResult,updatedResult})
   })
+
+  
   
   
   
   
     // Send a ping to confirm a successful connection
-    // await client.db("admin").command({ ping: 1 });
-    // console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    await client.db("admin").command({ ping: 1 });
+    console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
     // await client.close();
