@@ -1,19 +1,14 @@
-require('dotenv').config()
-
 const express = require('express');
+require('dotenv').config()
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express()
 const cors = require('cors');
 const port = process.env.PORT || 5000
 const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY);
 
-
 // middleware
 app.use(cors())
 app.use(express.json())
-
-
-
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb://${process.env.DB_USER}:${process.env.DB_PASS}@ac-onjpk5k-shard-00-00.xskcn3u.mongodb.net:27017,ac-onjpk5k-shard-00-01.xskcn3u.mongodb.net:27017,ac-onjpk5k-shard-00-02.xskcn3u.mongodb.net:27017/?ssl=true&replicaSet=atlas-g07jbs-shard-0&authSource=admin&retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -25,14 +20,30 @@ const client = new MongoClient(uri, {
   }
 });
 
-async function run() {
+const dbConnect = async () => {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
-    // await client.connect();
+    client.connect();
+    console.log("Database Connected Successfully✅");
+
+  } catch (error) {
+    console.log(error.name, error.message);
+  }
+}
+dbConnect()
+
+
+
+
     const usersCollection = client.db("summerCampDb").collection('users')
     const classesCollection = client.db("summerCampDb").collection('classes')
     const selectedClassCollection = client.db("summerCampDb").collection('selectedClasses')
     const paymentCollection = client.db("summerCampDb").collection('payment')
+  
+    app.get('/', (req,res)=> {
+      res.send('summer camp  is running')
+  })
+
+
 
   //  class related api 
    app.post('/allClasses',async(req,res)=> {
@@ -59,11 +70,11 @@ app.get('/myClass/:email',async(req,res)=> {
 
 
 // getting single class for payment
-app.get('/classes/:id', async(req,res)=> {
+app.get('/selectedClass/:id', async(req,res)=> {
 
    const id = req.params.id
     const query = {_id : new ObjectId(id)}
-    const result = await classesCollection.findOne(query)
+    const result = await selectedClassCollection.findOne(query)
     res.send(result)
 
 })
@@ -88,9 +99,11 @@ app.get('/selectedClass', async(req,res)=> {
 app.delete('/selectedClass/:id', async(req,res)=> {
 
         const id = req.params.id
+        console.log(id)
         
-        const query = {_id : id}
+        const query = {_id : new ObjectId(id)}
         const result = await selectedClassCollection.deleteOne(query)
+        console.log(result)
         res.send(result)
 
 })
@@ -273,27 +286,11 @@ app.delete('/selectedClass/:id', async(req,res)=> {
    res.send({inserterResult,updatedResult})
   })
 
-  
-  
-  
-  
-  
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } finally {
-    // Ensures that the client will close when you finish/error
-    // await client.close();
-  }
-}
-run().catch(console.dir);
 
 
 
 
-app.get('/', (req,res)=> {
-    res.send('summer camp  is running')
-})
+
 
 app.listen(port, ()=>{
      console.log(`summer camp is running on port : ${port} `)
